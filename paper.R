@@ -1,10 +1,15 @@
 ## Complexity script ## Juan Muelbert et al. 2024
 
+# Set up ====
+# ..... Libraries ====
+
 library(tidyverse)
 library(visreg)
 library(gridExtra)
 
-## data ##
+# Main ====
+
+# ..... Load and modify data ====
 complex_data <- read.csv("data_complexity_21oct2023.csv")
 metrics <- read.csv("tile_metrics.csv")
 data <- complex_data %>% left_join(metrics) %>% filter(treatment != "control") %>% na.omit()
@@ -22,7 +27,13 @@ data.ph <- data %>% filter(site == "port_hacking")
 caged <- data %>% filter(treatment == "caged")
 uncaged <- data %>% filter(treatment == "uncaged")
 
-### Effects of logRG on oyster counts and density # caged treatment only
+
+# ..... Modelling ====
+
+sites <- uncaged$site %>% unique()
+
+# .......... Effects of logRG on oyster counts and density ==== 
+# caged treatment only
 
 area.count <- lm(sqrt(oysters) ~ poly(logRG, 2) * site,
                  data = uncaged)
@@ -34,6 +45,24 @@ visreg::visreg(area.count, "logRG", by = "site", overlay=T)
 plot(area.count$residuals, area.count$fitted.values)
 hist(area.count$residuals)
 
+
+
+area.count.sites <- lapply(1:length(sites), function(x) {
+  site_x <- sites[x]
+  
+  lm(sqrt(oysters) ~ poly(logRG, 2),
+     data = uncaged %>% filter(site == site_x))
+  
+})
+
+names(area.count.sites) <- sites
+                 
+
+lapply(area.count.sites, summary)
+
+
+
+
 area.density <- lm(sqrt(density) ~ poly(logRG, 2) * site,
                    data = uncaged)
 sum_area.density <- summary(area.density)
@@ -44,6 +73,45 @@ visreg::visreg(area.density, "logRG", by = "site", overlay=T)
 plot(area.density$residuals, area.density$fitted.values)
 hist(area.density$residuals)
 
+summary(area.density)
+
+
+
+area.density.sites <- lapply(1:length(sites), function(x) {
+  site_x <- sites[x]
+  
+  lm(sqrt(density) ~ poly(logRG, 2),
+     data = uncaged %>% filter(site == site_x))
+  
+})
+
+names(area.density.sites) <- sites
+
+
+lapply(area.density.sites, summary)
+
+
+
+ggplot(data = uncaged,
+       aes(y = sqrt(oysters), 
+           x = logRG,
+           colour = site,
+           fill = site,
+           group = site)) +
+  
+  geom_jitter(width = 0.01, alpha = 0.8) +
+  
+  geom_smooth(method = 'lm', formula = y ~poly(x,2),
+              size = 2, se = F, colour = 'white') +
+  geom_smooth(method = 'lm', formula = y ~poly(x,2),
+              size = 1, se = T) +
+  
+  theme_minimal()
+
+
+
+
+
 
 # Plotting
 par(mfrow=c(1,2))
@@ -52,20 +120,51 @@ visreg::visreg(area.density, "logRG", by = "site", overlay=T, ylim = c(0, 0.4)) 
 
 # Models for single variables (logRG, fd and logHeight) per site, comparing treatment effects
 # Hawkesbury
-hr.rg <- lm(sqrt(density) ~ poly(logRG, 2) * treatment,
-            data = data.hr)
-summary(hr.rg)
-anova(hr.rg)
-visreg::visreg(hr.rg, "logRG", by = "treatment", overlay=T)
-plot(hr.rg$residuals, hr.rg$fitted.values)
-hist(hr.rg$residuals)
+hr.rg.cg <- lm(sqrt(density) ~ poly(logRG, 2),
+               data = data.hr %>% filter(treatment == 'caged'))
+summary(hr.rg.cg)
 
-hr.fd <- lm(sqrt(density) ~ poly(fd, 2) * treatment,
+hr.rg.uc <- lm(sqrt(density) ~ poly(logRG, 2),
+               data = data.hr %>% filter(treatment == 'uncaged'))
+summary(hr.rg.uc)
+
+
+hr.rg.uc_vs_cg <- lm(sqrt(density) ~ poly(logRG, 2) * treatment,
+            data = data.hr)
+summary(hr.rg.uc_vs_cg)
+anova(hr.rg.uc_vs_cg)
+visreg::visreg(hr.rg.uc_vs_cg, "logRG", by = "treatment", overlay=T)
+plot(hr.rg.uc_vs_cg$residuals, hr.rg.uc_vs_cg$fitted.values)
+hist(hr.rg.uc_vs_cg$residuals)
+
+
+
+hr.fd.cg <- lm(sqrt(density) ~ poly(fd, 2),
+               data = data.hr %>% filter(treatment == 'caged'))
+summary(hr.fd.cg)
+
+hr.fd.uc <- lm(sqrt(density) ~ poly(fd, 2),
+               data = data.hr %>% filter(treatment == 'uncaged'))
+summary(hr.fd.uc)
+
+
+hr.fd.uc_vs_cg <- lm(sqrt(density) ~ poly(fd, 2) * treatment,
             data = data.hr)
 summary(hr.fd)
 visreg::visreg(hr.fd, "fd", by = "treatment", overlay=T)
 plot(hr.fd$residuals, hr.fd$fitted.values)
 hist(hr.fd$residuals)
+
+
+
+hr.height.cg <- lm(sqrt(density) ~ poly(logHeight, 2),
+               data = data.hr %>% filter(treatment == 'caged'))
+summary(hr.height.cg)
+
+hr.height.uc <- lm(sqrt(density) ~ poly(logHeight, 2),
+               data = data.hr %>% filter(treatment == 'uncaged'))
+summary(hr.height.uc)
+
 
 hr.height<- lm(sqrt(density) ~ poly(logHeight, 2) * treatment,
                data = data.hr)
@@ -76,6 +175,14 @@ hist(hr.height$residuals)
 
 #Port Hacking
 
+ph.rg.cg <- lm(sqrt(density) ~ poly(logRG, 2),
+               data = data.ph %>% filter(treatment == 'caged'))
+summary(ph.rg.cg)
+
+ph.rg.uc <- lm(sqrt(density) ~ poly(logRG, 2),
+               data = data.ph %>% filter(treatment == 'uncaged'))
+summary(ph.rg.uc)
+
 ph.rg <- lm(sqrt(density) ~ poly(logRG, 2) * treatment,
             data = data.ph)
 summary(ph.rg)
@@ -84,12 +191,32 @@ visreg::visreg(ph.rg, "logRG", by = "treatment", overlay=T)
 plot(ph.rg$residuals, ph.rg$fitted.values)
 hist(ph.rg$residuals)
 
+
+ph.fd.cg <- lm(sqrt(density) ~ poly(fd, 2),
+               data = data.ph %>% filter(treatment == 'caged'))
+summary(ph.fd.cg)
+
+ph.fd.uc <- lm(sqrt(density) ~ poly(fd, 2),
+               data = data.ph %>% filter(treatment == 'uncaged'))
+summary(ph.fd.uc)
+
 ph.fd <- lm(sqrt(density) ~ poly(fd, 2) * treatment,
             data = data.ph)
 summary(ph.fd)
 visreg::visreg(ph.fd, "fd", by = "treatment", overlay=T)
 plot(ph.fd$residuals, ph.fd$fitted.values)
 hist(ph.fd$residuals)
+
+
+
+ph.height.cg <- lm(sqrt(density) ~ poly(logHeight, 2),
+                   data = data.ph %>% filter(treatment == 'caged'))
+summary(ph.height.cg)
+
+ph.height.uc <- lm(sqrt(density) ~ poly(logHeight, 2),
+                   data = data.ph %>% filter(treatment == 'uncaged'))
+summary(ph.height.uc)
+
 
 ph.height<- lm(sqrt(density) ~ poly(logHeight, 2) * treatment,
                data = data.ph)
@@ -100,6 +227,16 @@ hist(ph.height$residuals)
 
 #Brisbane water
 
+
+bw.rg.cg <- lm(sqrt(density) ~ poly(logRG, 2),
+               data = data.bw %>% filter(treatment == 'caged'))
+summary(bw.rg.cg)
+
+bw.rg.uc <- lm(sqrt(density) ~ poly(logRG, 2),
+               data = data.bw %>% filter(treatment == 'uncaged'))
+summary(bw.rg.uc)
+
+
 bw.rg <- lm(sqrt(density) ~ poly(logRG, 2) * treatment,
             data = data.bw)
 summary(bw.rg)
@@ -107,12 +244,34 @@ visreg::visreg(bw.rg, "logRG", by = "treatment", overlay=T)
 plot(bw.rg$residuals, bw.rg$fitted.values)
 hist(bw.rg$residuals)
 
+
+
+bw.fd.cg <- lm(sqrt(density) ~ poly(fd, 2),
+               data = data.bw %>% filter(treatment == 'caged'))
+summary(bw.fd.cg)
+
+bw.fd.uc <- lm(sqrt(density) ~ poly(fd, 2),
+               data = data.bw %>% filter(treatment == 'uncaged'))
+summary(bw.fd.uc)
+
+
 bw.fd <- lm(sqrt(density) ~ poly(fd, 2) * treatment,
             data = data.bw)
 summary(bw.fd)
 visreg::visreg(bw.fd, "fd", by = "treatment", overlay=T)
 plot(bw.fd$residuals, bw.fd$fitted.values)
 hist(bw.fd$residuals)
+
+
+
+bw.height.cg <- lm(sqrt(density) ~ poly(logHeight, 2),
+                   data = data.bw %>% filter(treatment == 'caged'))
+summary(bw.height.cg)
+
+bw.height.uc <- lm(sqrt(density) ~ poly(logHeight, 2),
+                   data = data.bw %>% filter(treatment == 'uncaged'))
+summary(bw.height.uc)
+
 
 bw.height<- lm(sqrt(density) ~ poly(logHeight, 2) * treatment,
                data = data.bw)
@@ -330,3 +489,25 @@ control.mod <- lm(sqrt(oysters) ~ treatment, data = control_data)
 summary(control.mod) # no difference between cage control
 hist(control.mod$residuals)
 plot(control.mod$fitted.values, control.mod$residuals)
+
+
+
+# 3D plots
+
+library(plotly)
+
+metrics_and_oyster_reefs <- bind_rows(metrics, oyster_reefs)
+
+plot <- plot_ly(metrics, x = ~height, y = ~fd, z = ~rugosity,
+                type = "scatter3d", mode = "markers",
+                marker = list(size = 12, color = ~rugosity, colorscale = "Viridis"))
+
+# THIS NEED RUGOSITY IN THE OYSTER_REEFS DATA TO WORK
+# plot <- plot %>% add_trace(data = oyster_reefs %>%
+#                              mutate(height = meanlogHeight,
+#                                     fd = meanFD,
+#                                     logRG = meanlogHeight)
+#                            , colour = 'black')
+
+# Show plot
+plot
