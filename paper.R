@@ -490,24 +490,15 @@ summary(control.mod) # no difference between cage control
 hist(control.mod$residuals)
 plot(control.mod$fitted.values, control.mod$residuals)
 
-
-
 # 3D plots
 
 library(plotly)
 
-metrics_and_oyster_reefs <- bind_rows(metrics, oyster_reefs)
+metrics_and_reefs <- read.csv("metric_and_reefs.csv")
+metrics_and_reefs$logHeight <- log(metrics_and_reefs$height
 
-plot <- plot_ly(metrics, x = ~height, y = ~fd, z = ~rugosity,
-                type = "scatter3d", mode = "markers",
-                marker = list(size = 12, color = ~rugosity, colorscale = "Viridis"))
-
-# THIS NEED RUGOSITY IN THE OYSTER_REEFS DATA TO WORK
-# plot <- plot %>% add_trace(data = oyster_reefs %>%
-#                              mutate(height = meanlogHeight,
-#                                     fd = meanFD,
-#                                     logRG = meanlogHeight)
-#                            , colour = 'black')
-
-# Show plot
+plot <- plot_ly(metrics_and_reefs, x = ~height, y = ~fd, z = ~logRG) %>%
+  add_trace(data = metrics_and_reefs,
+            color = ~category, colors = "Dark2")                                   
+#Show plot
 plot
