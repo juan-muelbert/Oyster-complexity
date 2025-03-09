@@ -14,5 +14,3 @@ control.csv contains the data for the analysis looking at the effects of caging 
 Code:
 
 paper.R is the main script to run analyses in the manuscript and figure creation.
-
-Data.Rproj is the R project
