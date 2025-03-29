@@ -118,7 +118,7 @@ hist(residuals(height.mod))
 r.squaredGLMM(height.mod)
 
 
-# Height plot
+# Fig2c
 
 Height.new <- seq(from = min(data$logHeight),
                   to = max(data$logHeight),
@@ -207,7 +207,7 @@ ggplot(data = heatmap.df, aes(x = x, y = y, fill = scaled_z)) +
 
 ### For suplementary materials ##
 
-# Model with and without surface area
+# Models with and without surface area
 
 ### Effects of logRG on oyster counts and density for uncaged and caged treatments
 
@@ -367,7 +367,6 @@ grid.arrange(count.plot_uncaged, count.plot_caged, density.plot_uncaged, density
 mod_metrics <- lm(logRG ~ fd * logHeight, data = metrics)
 summary_mod_metrics <- summary(mod_metrics)
 summary_mod_metrics
-write.csv(summary_mod_metrics$coefficients, "mod_metrics.csv")
 visreg2d(mod_metrics, "fd", "logHeight", plot.type = "persp")
 
 # Model testing for caging artifacts
@@ -376,15 +375,5 @@ library(pscl)
 
 control_data <- read.csv("control.csv")
 control.mod <- zeroinfl(oysters ~ treatment, data = control_data, dist = "negbin")
-summary_control.mod <- summary(control.mod) # no difference between cage control
-summary_control
-Anova(control.mod)
-hist(control.mod$residuals)
-write.csv(summary_control.mod$coefficients, "control_mod.csv")
-
-
-control_mod <- manyglm(oysters ~ treatment, data = control_data, family = "poisson")
-summary_control_mod <- summary(control_mod)
-hist(control_mod$residuals)
-plot.manyglm(control_mod)
-write.csv(summary_control_mod$coefficients, "summary_control.csv")
+summary_control.mod <- summary(control.mod) 
+summary_control.mod # no difference between cage control
