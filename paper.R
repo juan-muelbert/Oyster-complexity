@@ -376,4 +376,4 @@ library(pscl)
 control_data <- read.csv("control.csv")
 control.mod <- zeroinfl(oysters ~ treatment, data = control_data, dist = "negbin")
 summary_control.mod <- summary(control.mod) 
-summary_control.mod # no difference between cage control
+summary_control.mod # no difference between cage control and uncaged treatment
