@@ -1,3 +1,5 @@
+rm(list=ls())
+
 library(tidyverse)
 library(visreg)
 library(gridExtra)
@@ -5,22 +7,35 @@ library(lme4)
 library(lmerTest)
 library(car)
 library(scales)
+library(mvabund)
+library(pscl)
+library(MuMIn)
 
 ## Three-dimensional niche construction maximizes offspring survival. Esquivel-Muelbert et al. 2025 ##
 
+# Data loading and setup ====
+
 complex_data <- read.csv("data_complexity_21oct2023.csv")
+
 metrics <- read.csv("tile_metrics.csv")
+metrics$logHeight <- log10(metrics$height)
+
 data <- complex_data %>% left_join(metrics) %>% filter(treatment != "control") %>% na.omit()
 data$density <- data$oysters/data$surface_area
-data$site<-as.factor(data$site)
+data$site <- as.factor(data$site)
 data$treatment <- as.factor(data$treatment)
 data$sqrt.den <- sqrt(data$density)
+data$logHeight <- log10(data$height)
+
 reefs <- read.csv("reef_metrics.csv")
 reefs$logHeight <- log10(reefs$height)
 
+control_data <- read.csv("control.csv")
 
 caged <- data %>% filter(treatment == "caged")
 uncaged <- data %>% filter(treatment == "uncaged")
+
+# Main ====
 
 ### Complexity mediates predation on oyster recruits
 # Models for single variables (logRG, fd and logHeight) comparing treatment effects, using site as random effects
@@ -36,10 +51,10 @@ ranef(rg.mod)
 r.squaredGLMM(rg.mod)
 
 # Fig2a
-
 rugosity.new <- seq(from = min(data$logRG),
                     to = max(data$logRG),
                     length.out = 200)
+
 predic.rug <- tibble(logRG = rugosity.new) %>%
   expand_grid(tibble(treatment = c("caged", "uncaged"))) %>%
   expand_grid(tibble(site = c("brisbane_waters", "port_hacking", "hawkesbury")))
@@ -67,9 +82,9 @@ rg.plot <- ggplot(data = plot_data.summary, aes(x = logRG, y = fit, colour = tre
 rg.plot
 
 ## Fractal dimension
-
 fd.mod <- lmer(sqrt(density) ~ poly(fd, 2) * treatment + (1|site),
                data = data)
+
 summary(fd.mod)
 summary.fd.mod <- summary(fd.mod)
 write.csv(summary.fd.mod$coefficients, "FD_summary.csv")
@@ -78,7 +93,6 @@ ranef(fd.mod)
 r.squaredGLMM(fd.mod)
 
 # Fig2b
-
 fd.new <- seq(from = min(data$fd),
               to = max(data$fd),
               length.out = 200)
@@ -111,6 +125,7 @@ fd.plot
 ## Height
 height.mod <- lmer(sqrt(density) ~ poly(logHeight, 2) * treatment + (1|site),
                    data = data)
+
 summary(height.mod)
 summary.height.mod <- summary(height.mod)
 write.csv(summary.height.mod$coefficients, "Height_summary.csv")
@@ -119,7 +134,6 @@ r.squaredGLMM(height.mod)
 
 
 # Fig2c
-
 Height.new <- seq(from = min(data$logHeight),
                   to = max(data$logHeight),
                   length.out = 200)
@@ -150,19 +164,20 @@ Height.plot <- ggplot(data = Height.plot_data.summary, aes(x = logHeight, y = fi
 Height.plot
 
 # Plot Fig 2 Raw
-
 grid.arrange(rg.plot, fd.plot, Height.plot, ncol=3, nrow=1)
+
 
 ## Three-dimensional niche construction on oyster reefs
 
 # Modelling the interactive effects of Fractal dimension and Height range on oyster density
-
 fd.height_int <- lmer(sqrt(density) ~ poly(fd, 2) * poly(logHeight, 2) + (1|site), data = uncaged)
+
 vif(fd.height_int)
 summary.fd_height <- summary(fd.height_int)
 summary.fd_height
 hist(residuals(fd.height_int))
 plot(fd.height_int)
+
 write.csv(summary.fd_height$coefficients, "fd_height_full_mod.csv")
 
 
@@ -188,7 +203,6 @@ heatmap.df$scaled_z <- rescale(heatmap.df$z,
                                na.rm = TRUE, finite = TRUE)) # scaling model from 0 to max predicted density(sqrt) to remove negative values 
 
 ## heatmap
-
 ggplot(data = heatmap.df, aes(x = x, y = y, fill = scaled_z)) +
   geom_raster() +
   geom_contour(data = heatmap.df, aes(z=scaled_z), color="grey10", linewidth = 0.3, binwidth = 0.025) +
@@ -205,28 +219,28 @@ ggplot(data = heatmap.df, aes(x = x, y = y, fill = scaled_z)) +
   xlab("Fractal dimension") + ylab("log Height range") + labs(fill = "Oysters per cm2 (sqrt)") +
   scale_y_continuous(breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1))
 
-### For suplementary materials ##
+# Suplementary materials ====
 
 # Models with and without surface area
 
 ### Effects of logRG on oyster counts and density for uncaged and caged treatments
 
 ## Count model (effects of surface area included)
+
 # Uncaged
 count.mod_uncaged <- lmer(sqrt(oysters) ~ poly(logRG, 2) + (1|site), data = uncaged)
 sum_count.mod_uncaged <- summary(count.mod_uncaged)
 sum_count.mod_uncaged
 write.csv(sum_count.mod_uncaged$coefficients, "area_count_uncaged.csv")
-hist(residuals(area.count))
+hist(residuals(count.mod_uncaged))
 r.squaredGLMM(count.mod_uncaged)
 
 # Caged
-
 count.mod_caged <- lmer(sqrt(oysters) ~ poly(logRG, 2) + (1|site), data = caged)
 sum_count.mod_caged <- summary(count.mod_caged)
 sum_count.mod_caged
 write.csv(sum_count.mod_caged$coefficients, "area_count_caged.csv")
-hist(residuals(area.count))
+hist(residuals(count.mod_caged))
 r.squaredGLMM(count.mod_caged)
 
 # Density Model (effects of area excluded)
@@ -235,20 +249,18 @@ density.mod_uncaged <- lmer(sqrt(density) ~ poly(logRG, 2) + (1|site), data = un
 sum_density.mod_uncaged <- summary(density.mod_uncaged)
 sum_density.mod_uncaged
 write.csv(sum_density.mod_uncaged$coefficients, "area_density_uncaged.csv")
-hist(residuals(area.density))
+hist(residuals(density.mod_uncaged))
 r.squaredGLMM(density.mod_uncaged)
 
 # Caged
-
 density.mod_caged <- lmer(sqrt(density) ~ poly(logRG, 2) + (1|site), data = caged)
 sum_density.mod_caged <- summary(density.mod_caged)
 sum_density.mod_caged
 write.csv(sum_density.mod_caged$coefficients, "area_density_caged.csv")
-hist(residuals(area.density))
+hist(residuals(density.mod_caged))
 r.squaredGLMM(density.mod_caged)
 
 # Figure S1
-
 rugosity.new <- seq(from = min(data$logRG),
                     to = max(data$logRG),
                     length.out = 200)
@@ -261,7 +273,6 @@ predic.rug_caged <- tibble(logRG = rugosity.new) %>%
   expand_grid(tibble(site = c("brisbane_waters", "port_hacking", "hawkesbury")))
 
 # Fig S1a - Count data uncaged
-
 count.predict_uncaged <- predict(object = count.mod_uncaged,
                            newdata = predic.rug_uncaged,
                            se.fit = TRUE,
@@ -358,22 +369,19 @@ density.plot_caged <- ggplot(data = plot_density_data.summary_caged, aes(x = log
 density.plot_caged
 
 # Create Fig S1. Plot panels a, b, c and d together
-
 grid.arrange(count.plot_uncaged, count.plot_caged, density.plot_uncaged, density.plot_caged, ncol=2, nrow=2)
 
 
 # Relationship between Rugosity, Height range and Fractal dimension
-
 mod_metrics <- lm(logRG ~ fd * logHeight, data = metrics)
+
 summary_mod_metrics <- summary(mod_metrics)
 summary_mod_metrics
 visreg2d(mod_metrics, "fd", "logHeight", plot.type = "persp")
 
-# Model testing for caging artifacts
-library(mvabund)
-library(pscl)
 
-control_data <- read.csv("control.csv")
+# Model testing for caging artifacts
 control.mod <- zeroinfl(oysters ~ treatment, data = control_data, dist = "negbin")
+
 summary_control.mod <- summary(control.mod) 
 summary_control.mod # no difference between cage control and uncaged treatment
