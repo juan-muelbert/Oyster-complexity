@@ -6,8 +6,11 @@ library(car)
 library(scales)
 library(glmmTMB)
 library(MuMIn)
+library(pscl)
 
 ## Three-dimensional niche construction maximizes offspring survival. Esquivel-Muelbert et al. 2025 ##
+
+# Data loading and setup ====
 
 complex_data <- read.csv("data_complexity_21oct2023.csv")
 metrics <- read.csv("tile_metrics.csv")
@@ -21,6 +24,8 @@ reefs$logRG <- log10(reefs$rugosity)
 
 caged <- data %>% filter(treatment == "caged")
 uncaged <- data %>% filter(treatment == "uncaged")
+
+# Main ====
 
 ### Complexity mediates predation on oyster recruits
 ## Modelling the effect of rugosity on oyster counts and oyster densities, comparing treatment effects, using site as random effects
@@ -196,10 +201,9 @@ ggplot(data = heatmap.df, aes(x = x, y = y, fill = scaled_z)) +
   xlab("Fractal dimension") + ylab("log Height range") + labs(fill = "Oysters per cm2 (sqrt)") +
   scale_y_continuous(breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1))
 
-### For suplementary materials ##
+# Suplementary materials ====
 
 # Model testing for caging artifacts
-library(pscl)
 
 control_data <- read.csv("control.csv")
 control.mod <- zeroinfl(oysters ~ treatment, data = control_data, dist = "negbin")
