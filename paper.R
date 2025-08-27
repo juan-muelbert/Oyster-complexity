@@ -27,6 +27,30 @@ uncaged <- data %>% filter(treatment == "uncaged")
 
 # Main ====
 
+# Relationship between Rugosity, fractal dimension and height range in the experimental design
+
+experimental_fd.height <- lm(logRG ~ fd * logHeight, data = metrics)
+summary(experimental_fd.height)
+
+# Fig 1c
+
+experimental_heatmap <- visreg2d(experimental_fd.height, xvar = "fd", yvar = "logHeight", plot.type ="gg", scale = "response",
+                                 data = metrics)
+
+experimental_heatmap.df <- experimental_heatmap$data
+
+ggplot(data = experimental_heatmap.df, aes(x = x, y = y, fill = z)) +
+  geom_raster() +
+  geom_point(data = metrics, aes(x = fd, y = logHeight), shape = 17, size = 4, colour = "black", inherit.aes = FALSE) +
+  geom_point(data = reefs, aes(x = fd, y = logHeight), shape = 4, size = 4, colour = "black", inherit.aes = FALSE) +
+  scale_fill_viridis_c(option = "A", begin = 0.3, end = 1) +
+  theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+                     panel.grid.minor = element_blank(), axis.line = element_line(colour = "grey50")) +
+  xlab("Fractal dimension") + ylab("log Height range") + labs(fill = "logRugosity") +
+  scale_y_continuous(breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1))
+
+
+
 ### Complexity mediates predation on oyster recruits
 ## Modelling the effect of rugosity on oyster counts and oyster densities, comparing treatment effects, using site as random effects
 
@@ -38,7 +62,7 @@ summary(rg.mod_count)
 summary.rg.mod_count <- summary(rg.mod_count)
 hist(residuals(rg.mod_count))
 
-# Fig2a
+# Fig 2a
 
 rugosity.new <- seq(from = min(data$logRG),
                     to = max(data$logRG),
@@ -78,7 +102,7 @@ summary(fd.mod)
 summary.fd.mod <- summary(fd.mod)
 hist(residuals(fd.mod))
 
-# # Fig 2b
+# Fig 2b
 
 fd.new <- seq(from = min(data$fd),
               to = max(data$fd),
