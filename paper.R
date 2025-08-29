@@ -8,7 +8,7 @@ library(glmmTMB)
 library(MuMIn)
 library(pscl)
 
-## Three-dimensional niche construction maximizes offspring survival. Esquivel-Muelbert et al. 2025 ##
+## The natural architecture of oyster reefs maximises recruit survival. Esquivel-Muelbert et al. 2025 ##
 
 # Data loading and setup ====
 
