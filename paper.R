@@ -41,6 +41,7 @@ write.csv(summary.sa.count.mod$coefficients$cond, "SA_count_summary.csv")
 hist(residuals(sa.count.mod))
 ranef(sa.count.mod)
 r.squaredGLMM(sa.count.mod)
+Anova(sa.count.mod)
 
 # Fig. 2a
 
@@ -81,6 +82,7 @@ fd.mod <- lmer(sqrt(density) ~ poly(fd, 2) * treatment + (1|site),
                data = data)
 summary(fd.mod)
 summary.fd.mod <- summary(fd.mod)
+Anova(fd.mod, test = "F")
 hist(residuals(fd.mod))
 
 # Fig 2b
@@ -120,6 +122,7 @@ height.mod <- lmer(sqrt(density) ~ poly(logHeight, 2) * treatment + (1|site),
                    data = data)
 summary(height.mod)
 summary.height.mod <- summary(height.mod)
+Anova(height.mod, test = "F")
 hist(residuals(height.mod))
 
 # Fig 2c
@@ -162,6 +165,7 @@ fd.height_int <- lmer(sqrt(density) ~ poly(fd, 2) * poly(logHeight, 2) + (1|site
 vif(fd.height_int)
 summary.fd_height <- summary(fd.height_int)
 summary.fd_height
+Anova(fd.height_int, test = "F")
 hist(residuals(fd.height_int))
 
 # Plot model (heatmap) and overlay data from natural oyster reefs
