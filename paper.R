@@ -21,7 +21,6 @@ data$site<-as.factor(data$site)
 data$treatment <- as.factor(data$treatment)
 reefs <- read.csv("reef_metrics.csv")
 reefs$logHeight <- log10(reefs$height)
-reefs$logRG <- log10(reefs$rugosity)
 
 caged <- data %>% filter(treatment == "caged")
 uncaged <- data %>% filter(treatment == "uncaged")
@@ -37,10 +36,7 @@ sa.count.mod <- glmmTMB(oysters ~ poly(logSurface_area, 2) * treatment + (1|site
                         data = data)
 summary(sa.count.mod)
 summary.sa.count.mod <- summary(sa.count.mod)
-write.csv(summary.sa.count.mod$coefficients$cond, "SA_count_summary.csv")
 hist(residuals(sa.count.mod))
-ranef(sa.count.mod)
-r.squaredGLMM(sa.count.mod)
 Anova(sa.count.mod)
 
 # Fig. 2a
@@ -175,9 +171,7 @@ oyster_reefs <- reefs %>% group_by(patch) %>% # summarising reef points by patch
             seFD   = sd(fd)/sqrt(n()),
             meanlogHeight = mean(logHeight),
             seHeight = sd(logHeight)/sqrt(n()),
-            sdFD = sd(fd), sdHeight = sd(logHeight,),
-            meanlogRG = mean(logRG),
-            seRG = sd(logRG)/sqrt(n()))
+            sdFD = sd(fd), sdHeight = sd(logHeight,))
 
 # Fig3
 # Generate raw fig with visreg2d
@@ -215,3 +209,4 @@ control_data <- read.csv("control.csv")
 control.mod <- zeroinfl(oysters ~ treatment, data = control_data, dist = "negbin")
 summary_control.mod <- summary(control.mod) # no difference between cage control and uncaged.
 summary_control.mod ## Supplementary Table 6
+
